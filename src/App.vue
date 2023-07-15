@@ -1,13 +1,16 @@
 <script setup>
 import WeatherSummary from './components/WeatherSummary.vue'
 import HighlightsItem from './components/HighlightsItem.vue'
-import { onMounted, ref } from 'vue'
+import CoordsItem from './components/CoordsItem.vue'
+import HumidityItem from './components/HumidityItem.vue'
+import { computed, onMounted, ref } from 'vue'
 
 const city = ref('Almaty')
 const weatherInfo = ref(null)
 
 const url = import.meta.env.VITE_API_BASE_URL
 const apiKey = import.meta.env.VITE_APP_API_KEY
+const isError = computed(() => weatherInfo.value?.cod !== 200)
 
 function getWeather() {
   fetch(`${url}q=${city.value}&appid=${apiKey}&units=metric`)
@@ -28,62 +31,37 @@ onMounted(() => {
       <div class="container">
         <div class="laptop">
           <div class="sections">
-            <section class="section section-left">
+            <section :class="['section', 'section-left', { 'section-error': isError }]">
               <div class="info">
                 <div class="city-inner">
                   <input type="text" class="search" v-model="city" @keyup.enter="getWeather" />
                 </div>
                 <!-- Summary -->
-                <WeatherSummary :weatherInfo="weatherInfo" />
+                <WeatherSummary v-if="!isError" :weatherInfo="weatherInfo" />
+                <div v-else class="error">
+                  <div
+                    class="error-title"
+                    style="margin-top: 16px; font-size: 32px; font-weight: bold; text-align: center"
+                  >
+                    Ooooops! Something went wrong
+                  </div>
+                  <div
+                    class="error-message"
+                    style="text-transform: capitalize; margin-top: 8px; text-align: center"
+                  >
+                    {{ weatherInfo?.message }}
+                  </div>
+                </div>
               </div>
             </section>
             <section class="section section-right">
               <!-- HighlightsItem -->
-              <HighlightsItem />
+              <HighlightsItem v-if="!isError" :weatherInfo="weatherInfo" />
             </section>
           </div>
-          <div class="sections">
-            <section class="section-bottom">
-              <div class="block-bottom">
-                <div class="block-bottom-inner">
-                  <div class="block-bottom-pic pic-coords"></div>
-                  <div class="block-bottom-texts">
-                    <div class="block-bottom-text-block">
-                      <div class="block-bottom-text-block-title">Longitude: 2.3488</div>
-                      <div class="block-bottom-text-block-desc">
-                        Longitude measures distance east or west of the prime meridian.
-                      </div>
-                    </div>
-                    <div class="block-bottom-text-block">
-                      <div class="block-bottom-text-block-title">Latitude: 48.8534</div>
-                      <div class="block-bottom-text-block-desc">
-                        Latitude lines start at the equator (0 degrees latitude) and run east and
-                        west, parallel to the equator.
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </section>
-            <section class="section-bottom">
-              <div class="block-bottom">
-                <div class="block-bottom-inner">
-                  <div class="block-bottom-pic pic-humidity"></div>
-                  <div class="block-bottom-texts">
-                    <div class="block-bottom-text-block">
-                      <div class="block-bottom-text-block-title">Humidity: 60 %</div>
-                      <div class="block-bottom-text-block-desc">
-                        Humidity is the concentration of water vapor present in the air. Water
-                        vapor, the gaseous state of water, is generally invisible to the human eye.
-                        <br /><br />
-                        The same amount of water vapor results in higher relative humidity in cool
-                        air than warm air.
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </section>
+          <div v-if="!isError" class="sections">
+            <CoordsItem :coord="weatherInfo.coord" />
+            <HumidityItem :humidity="weatherInfo.main.humidity" />
           </div>
         </div>
       </div>
@@ -119,9 +97,14 @@ onMounted(() => {
   width: 30%
   padding-right: 10px
 
+  &.section-error
+      min-width: 320px
+      width: 50px
+
   @media (max-width: 767px)
     width: 100%
     padding-right: 0
+
 
 .section-right
   width: 70%
@@ -131,6 +114,7 @@ onMounted(() => {
     width: 100%
     margin-top: 16px
     padding-left: 0
+
 
 .city-inner
   position: relative
